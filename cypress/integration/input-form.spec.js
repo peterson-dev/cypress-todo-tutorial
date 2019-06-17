@@ -2,7 +2,7 @@
 
 describe('Input form', () => {
   beforeEach(() => {
-    cy.visit('/')
+    cy.seedAndVisit([]) // accepts an array argument
   })
 
   it('focuses input on load', () => {
@@ -19,48 +19,46 @@ describe('Input form', () => {
   })
 
   context('Form submission', () => {
-    // beforeEach(() => {
-    //   cy.server()
-    // })
+    beforeEach(() => {
+      cy.server() // spins up server for stubbed api call
+    })
 
-    it.only('Adds a new todo on submit', () => {
-      cy.get('.new-todo')
-        .type('Buy eggs')
-        .type('{enter}')
+    it('Adds a new todo on submit', () => {
+      const itemText = 'Buy eggs'
+      cy.route('POST', '/api/todos', {
+        name: itemText,
+        id: 1,
+        isComplete: false
       })
-      // const itemText = 'Buy eggs'
-      // cy.route('POST', '/api/todos', {
-      //   name: itemText,
-      //   id: 1,
-      //   isComplete: false
-      // })
+      cy.get('.new-todo')
+        .type(itemText)
+        .type('{enter}')
+   
+      cy.get('.new-todo')
+        .type(itemText)
+        .type('{enter}')
+        .should('have.value', '')
+      cy.get('.todo-list li')
+        // .should('have.length', 1)
+        .and('contain', itemText)
+    })
+    
+    it('Shows an error message on a failed submission', () => {
+      cy.route({
+        url: '/api/todos',
+        method: 'POST',
+        status: 500,
+        response: {} // empty object to response body
+      }) // this simulates a failed response to this stubbed request to backend
 
-    //   cy.get('.new-todo')
-    //     .type(itemText)
-    //     .type('{enter}')
-    //     .should('have.value', '')
+      cy.get('.new-todo')
+        .type('test{enter}')
 
-    //   cy.get('.todo-list li')
-    //     .should('have.length', 1)
-    //     .and('contain', itemText)
-    // })
+      cy.get('.todo-list li')
+        .should('not.exist')
 
-    // it('Shows an error message on a failed submission', () => {
-    //   cy.route({
-    //     url: '/api/todos',
-    //     method: 'POST',
-    //     status: 500,
-    //     response: {}
-    //   })
-
-    //   cy.get('.new-todo')
-    //     .type('test{enter}')
-
-    //   cy.get('.todo-list li')
-    //     .should('not.exist')
-
-    //   cy.get('.error')
-    //     .should('be.visible')
-    // })
+      cy.get('.error')
+        .should('be.visible')
+    })
   })
 })
